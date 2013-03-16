@@ -4,15 +4,15 @@ global main
 
 
 %macro readHelper 2
-rol %1, 4
-mov ebp, %1
-and ebp, 0x0000000F
-and %1, 0xFFFFFFF0
-or %2, ebp
+	rol %1, 4
+	mov ebp, %1
+	and ebp, 0x0000000F
+	and %1, 0xFFFFFFF0
+	or %2, ebp
 %endmacro
 
 section .rodata
-usage db "Usage: numfmt format number",0
+usage db "Usage: numfmt [format_string] number",0
 numError db "Error parsing number",0
 
 fmt db "0x%x 0x%x 0x%x 0x%x",10,0
@@ -27,19 +27,27 @@ disableMinus equ 0xFF ^ flgMinus
 
 section .data
 number: resd 4
-flags: resb 1
-length: resd 1
+flags: db 0
+length: db 0
 isNegative: db 0
+digits: resb 40
+curDigit: db 0, 0, 0, 1
 
 section .text
 
 main:
-	cmp [esp + 4], dword 3
-	jnz .printUsageMsg
+	; Check args number
+	mov eax, [esp + 4]
+	cmp eax, dword 1
+	je .printUsageMsg
 	
 	; Read flags
 	mov esi, [esp + 8]
 	mov esi, [esi + 4]
+	
+	cmp eax, dword 2
+	je .oneArg
+	
 	xor ecx, ecx
 	xor edx, edx
 	.loop1:
@@ -56,15 +64,16 @@ main:
 	mov [flags], ecx
 	mov [length], edx
 	
+	
+	mov esi, [esp + 8]
+	mov esi, [esi + 8]
+	.oneArg:
+	
 	; Read number into edi:edx:ecx:ebx
 	xor edi, edi
 	xor edx, edx
 	xor ecx, ecx
 	xor ebx, ebx
-	
-	mov esi, [esp + 8]
-	mov esi, [esi + 8]
-	
 	push ebp
 	
 	xor eax, eax
@@ -112,6 +121,16 @@ main:
 	mov [number + 8], ecx
 	mov [number + 12], ebx
 	
+	
+	; Testing 
+	push dword [number + 12]
+	push dword [number + 8]
+	push dword [number + 4]
+	push dword [number]
+	push fmt
+	call printf
+	add esp, 20
+	
 	; Make the number in array positive
 	mov ebp, edi
 	shr ebp, 31
@@ -120,7 +139,28 @@ main:
 	jnz .negateNumber
 	
 	.getDigits:
+	lea edi, [digits]
+	.loop4:
+		call checkZero
+		test eax, eax
+		jz .endLoop4
+		call divideByTen
+		add eax, '0'
+		mov [edi], al
+		inc edi
+		jmp .loop4
+	.endLoop4:
+	cmp edi, digits
+	jnz .revDigitsReady
+	mov [edi], byte '0'
+	inc edi
 	
+	.revDigitsReady:
+	mov [edi], byte 0
+	
+	push digits
+	call puts
+	add esp, 4
 	
 	; Testing 
 	push dword [number + 12]
@@ -134,8 +174,11 @@ main:
 	xor eax, eax
 	ret
 	
-	
 .negateNumber:
+	mov eax, [isNegative]
+	xor eax, 1
+	mov [isNegative], eax
+	
 	mov ecx, 4
 	mov esi, number
 	
@@ -227,4 +270,31 @@ main:
 	
 	add edx, eax
 	jmp .endLoop1
+
 	
+divideByTen:
+	mov ecx, 4
+	xor edx, edx
+	lea esi, [number]
+	mov ebx, 10
+	.loop8:
+		mov eax, [esi]
+		div ebx
+		mov [esi], eax
+		lea esi, [esi + 4]
+		loop .loop8
+	mov eax, edx
+	ret
+
+checkZero:
+	mov ecx, 4
+	lea esi, [number]
+	.loop7:
+		mov eax, [esi]
+		test eax, eax
+		jnz .notZero
+		lea esi, [esi + 4]
+		loop .loop7
+	.notZero:
+		ret
+
