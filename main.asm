@@ -1,5 +1,7 @@
 extern puts
 extern printf
+extern putchar
+
 global main
 
 
@@ -11,11 +13,20 @@ global main
 	or %2, ebp
 %endmacro
 
+%macro printChar 2
+	push %2
+	push dword %1
+	call putchar
+	add esp, 4
+	pop %2
+%endmacro
+
 section .rodata
 usage db "Usage: numfmt [format_string] number",0
 numError db "Error parsing number",0
 
 fmt db "0x%x 0x%x 0x%x 0x%x",10,0
+fmt1 db "%d",10,0
 
 flgSpace equ 0x1
 flgPlus equ 0x2
@@ -24,6 +35,7 @@ flgZero equ 0x8
 
 disableSpace equ 0xFF ^ flgSpace
 disableMinus equ 0xFF ^ flgMinus
+flagsAffectingLength equ flgPlus | flgSpace
 
 section .data
 number: resd 4
@@ -32,6 +44,8 @@ length: db 0
 isNegative: db 0
 digits: resb 40
 curDigit: db 0, 0, 0, 1
+numberLength: dd 0
+spacer: db 32
 
 section .text
 
@@ -64,6 +78,10 @@ main:
 	mov [flags], ecx
 	mov [length], edx
 	
+	push ecx
+	push fmt1
+	call printf
+	add esp, 8
 	
 	mov esi, [esp + 8]
 	mov esi, [esi + 8]
@@ -162,18 +180,112 @@ main:
 	call puts
 	add esp, 4
 	
-	; Testing 
-	push dword [number + 12]
-	push dword [number + 8]
-	push dword [number + 4]
-	push dword [number]
-	push fmt
-	call printf
-	add esp, 20
+	lea eax, [digits]
+	neg eax
+	lea eax, [eax + edi]
 	
+	xor ecx, ecx
+	mov cl, [flags]
+	and cl, flagsAffectingLength
+	or cl, byte [isNegative]
+	test cl, cl
+	jnz .incLength
+	
+	.lengthCalculated:
+	mov [numberLength], eax
+	xor ebx, ebx
+	mov bl, [length]
+	
+	sub ebx, eax
+	jl .greaterLength
+	.setSpaceCount:
+	
+	mov [length], bl
+
+
+	push eax
+	push fmt1
+	call printf
+	add esp, 8
+	
+	dec edi
+	lea esi, [digits]
+
+	.loop5:
+		mov al, [esi]
+		mov ah, [edi]
+		mov [esi], ah
+		mov [edi], al
+		inc esi
+		dec edi
+		cmp esi, edi
+		jb .loop5
+	
+	push digits
+	call puts
+	add esp, 4
+	
+	xor eax, eax
+	mov al, [flags]
+	test al, flgMinus
+	jnz .leftAligned
+	
+	;; Testing 
+	;push dword [number + 12]
+	;push dword [number + 8]
+	;push dword [number + 4]
+	;push dword [number]
+	;push fmt
+	;call printf
+	;add esp, 20
+	.return:
+	printChar 10, eax
 	xor eax, eax
 	ret
 	
+
+.greaterLength:
+	xor ebx, ebx
+	jmp .setSpaceCount
+	
+.leftAligned:
+	xor ecx, ecx
+	mov cl, [isNegative]
+	test cl, cl
+	jnz .printMinus
+	test al, flgPlus
+	jnz .printPlus
+	test al, flgSpace
+	jnz .printSpace
+	.laWriteNumber:
+	push digits
+	call printf
+	add esp, 4
+	xor ecx, ecx
+	mov cl, [length]
+	test cl, cl
+	jz .return
+	.loop6:
+		printChar ' ', ecx
+		loop .loop6
+	jmp .return
+
+.printPlus:
+	printChar '+', eax
+	jmp .laWriteNumber
+	
+.printMinus:
+	printChar '-', eax
+	jmp .laWriteNumber
+	
+.printSpace:
+	printChar ' ', eax
+	jmp .laWriteNumber
+
+.incLength:
+	inc eax
+	jmp .lengthCalculated
+
 .negateNumber:
 	mov eax, [isNegative]
 	xor eax, 1
@@ -249,6 +361,7 @@ main:
 		ret
 	
 	.zeroCase:
+		mov [spacer], byte '0'
 		or ecx, flgZero
 		and ecx, disableMinus
 		mov eax, 1
