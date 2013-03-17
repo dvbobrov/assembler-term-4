@@ -2,7 +2,7 @@ extern _puts
 extern _printf
 extern _putchar
 
-global main
+global _main
 
 
 %macro readHelper 2
@@ -56,7 +56,7 @@ spacer: db 32
 
 section .text
 
-main:
+_main:
 	; Check args number
 	mov eax, [esp + 4]
 	cmp eax, dword 1
