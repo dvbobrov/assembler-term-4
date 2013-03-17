@@ -13,12 +13,19 @@ global main
 	or %2, ebp
 %endmacro
 
+; %1: char to write, %2: register to save
 %macro printChar 2
 	push %2
 	push dword %1
 	call putchar
 	add esp, 4
 	pop %2
+%endmacro
+
+%macro printNum 0
+	push digits
+	call printf
+	add esp, 4
 %endmacro
 
 section .rodata
@@ -199,9 +206,7 @@ main:
 	sub ebx, eax
 	jl .greaterLength
 	.setSpaceCount:
-	
 	mov [length], bl
-
 
 	push eax
 	push fmt1
@@ -229,6 +234,22 @@ main:
 	mov al, [flags]
 	test al, flgMinus
 	jnz .leftAligned
+	test al, flgZero
+	jnz .zeroSpacer
+	
+	; Right-aligned with spaces
+	push eax
+	xor ecx, ecx
+	mov cl, [length]
+	test cl, cl
+	jz .endLoop10
+	.loop10:
+		printChar ' ', ecx
+		loop .loop10
+	.endLoop10:
+	pop eax
+	call .writePlusMinusOrSpace
+	printNum
 	
 	;; Testing 
 	;push dword [number + 12]
@@ -248,7 +269,22 @@ main:
 	xor ebx, ebx
 	jmp .setSpaceCount
 	
-.leftAligned:
+	
+.zeroSpacer:
+	call .writePlusMinusOrSpace
+	xor ecx, ecx
+	mov cl, [length]
+	test cl, cl
+	jz .endLoop9
+	.loop9:
+		printChar '0', ecx
+		loop .loop9
+	.endLoop9:
+	printNum
+	jmp .return
+
+; al: flags
+.writePlusMinusOrSpace:
 	xor ecx, ecx
 	mov cl, [isNegative]
 	test cl, cl
@@ -257,10 +293,24 @@ main:
 	jnz .printPlus
 	test al, flgSpace
 	jnz .printSpace
-	.laWriteNumber:
-	push digits
-	call printf
-	add esp, 4
+	.wrtRet:
+	ret
+	
+.printPlus:
+	printChar '+', eax
+	jmp .wrtRet
+	
+.printMinus:
+	printChar '-', eax
+	jmp .wrtRet
+	
+.printSpace:
+	printChar ' ', eax
+	jmp .wrtRet
+	
+.leftAligned:
+	call .writePlusMinusOrSpace
+	printNum
 	xor ecx, ecx
 	mov cl, [length]
 	test cl, cl
@@ -270,17 +320,7 @@ main:
 		loop .loop6
 	jmp .return
 
-.printPlus:
-	printChar '+', eax
-	jmp .laWriteNumber
-	
-.printMinus:
-	printChar '-', eax
-	jmp .laWriteNumber
-	
-.printSpace:
-	printChar ' ', eax
-	jmp .laWriteNumber
+
 
 .incLength:
 	inc eax
