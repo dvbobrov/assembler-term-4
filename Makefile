@@ -15,7 +15,7 @@ all: main.o
 	gcc -m32 -g -o numfmt main.o
 
 main.o: $(SOURCE)
-	yasm -a x86 -f $(BINARY_FORMAT) -g dwarf2 $(SOURCE)
+	yasm -a x86 -f $(BINARY_FORMAT) -g dwarf2 -o main.o $(SOURCE)
 
 clean:
 	$(RM) *.o numfmt
