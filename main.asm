@@ -85,11 +85,6 @@ main:
 	mov [flags], ecx
 	mov [length], edx
 	
-	push ecx
-	push fmt1
-	call printf
-	add esp, 8
-	
 	mov esi, [esp + 8]
 	mov esi, [esi + 8]
 	.oneArg:
@@ -147,14 +142,6 @@ main:
 	mov [number + 12], ebx
 	
 	
-	; Testing 
-	push dword [number + 12]
-	push dword [number + 8]
-	push dword [number + 4]
-	push dword [number]
-	push fmt
-	call printf
-	add esp, 20
 	
 	; Make the number in array positive
 	mov ebp, edi
@@ -183,10 +170,6 @@ main:
 	.revDigitsReady:
 	mov [edi], byte 0
 	
-	push digits
-	call puts
-	add esp, 4
-	
 	lea eax, [digits]
 	neg eax
 	lea eax, [eax + edi]
@@ -208,11 +191,6 @@ main:
 	.setSpaceCount:
 	mov [length], bl
 
-	push eax
-	push fmt1
-	call printf
-	add esp, 8
-	
 	dec edi
 	lea esi, [digits]
 
@@ -225,10 +203,6 @@ main:
 		dec edi
 		cmp esi, edi
 		jb .loop5
-	
-	push digits
-	call puts
-	add esp, 4
 	
 	xor eax, eax
 	mov al, [flags]
@@ -251,14 +225,6 @@ main:
 	call .writePlusMinusOrSpace
 	printNum
 	
-	;; Testing 
-	;push dword [number + 12]
-	;push dword [number + 8]
-	;push dword [number + 4]
-	;push dword [number]
-	;push fmt
-	;call printf
-	;add esp, 20
 	.return:
 	printChar 10, eax
 	xor eax, eax
