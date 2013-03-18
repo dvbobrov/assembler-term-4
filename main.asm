@@ -41,7 +41,7 @@ flgMinus equ 0x4
 flgZero equ 0x8
 
 disableSpace equ 0xFF ^ flgSpace
-disableMinus equ 0xFF ^ flgMinus
+disableZero equ 0xFF ^ flgZero
 flagsAffectingLength equ flgPlus | flgSpace
 
 section .data
@@ -57,13 +57,17 @@ spacer: db 32
 section .text
 
 main:
-	; Check args number
-	mov eax, [esp + 4]
+  push ebx
+  push ebp
+  push esi
+  push edi
+  ; Check args number
+	mov eax, [esp + 20]
 	cmp eax, dword 1
 	je .printUsageMsg
 	
 	; Read flags
-	mov esi, [esp + 8]
+	mov esi, [esp + 24]
 	mov esi, [esi + 4]
 	
 	cmp eax, dword 2
@@ -85,7 +89,7 @@ main:
 	mov [flags], ecx
 	mov [length], edx
 	
-	mov esi, [esp + 8]
+	mov esi, [esp + 24]
 	mov esi, [esi + 8]
 	.oneArg:
 	
@@ -150,6 +154,10 @@ main:
 	pop ebp
 	jnz .negateNumber
 	
+  call checkZero
+  test eax, eax
+  jz .unsetNegative
+
 	.getDigits:
 	lea edi, [digits]
 	.loop4:
@@ -226,10 +234,17 @@ main:
 	printNum
 	
 	.return:
-	printChar 10, eax
+  pop edi
+  pop esi
+  pop ebp
+  pop ebx
+;	printChar 10, eax
 	xor eax, eax
 	ret
 	
+.unsetNegative:
+  mov [isNegative], byte 0
+  jmp .getDigits
 
 .greaterLength:
 	xor ebx, ebx
@@ -360,16 +375,19 @@ main:
 		ret
 		
 	.minusCase:
-		test ecx, flgZero
-		jnz .end
+		;test ecx, flgZero
+		;jnz .end
 		or ecx, flgMinus
+    and ecx, disableZero
 		mov eax, 1
 		ret
 	
 	.zeroCase:
-		mov [spacer], byte '0'
+		test ecx, flgMinus
+    jnz .end
+    ;mov [spacer], byte '0'
 		or ecx, flgZero
-		and ecx, disableMinus
+		;and ecx, disableMinus
 		mov eax, 1
 		ret
 
