@@ -2,12 +2,16 @@ extern printf
 
 section .bss
 dct_matrix resd 64
+dct_matrix_transposed 64
 
 section .rodata
 
 sixteen dd 16.0
 half dd 0.5
 fmt db "%.10f",10,0
+
+section .data
+initialized db 0
 
 section .text
 
@@ -44,6 +48,10 @@ print_dct_matrix:
 
 calculate_dct_matrix:
    push ebx
+   mov ebx, [initialized]
+   test ebx, ebx
+   jnz .finish
+
    xor eax, eax
 
    .loop1:
@@ -64,6 +72,9 @@ calculate_dct_matrix:
         inc eax
         jmp .loop1
     .endloop1:
+
+    mov [initialized], 1
+    .finish:
         pop ebx
         ret
 
@@ -94,7 +105,10 @@ calculate_dct_element: ; i = eax; j = ebx
 
     pop eax
     lea ecx, [eax * 8 + ebx]
-    fstp dword [dct_matrix + ecx * 4]
+    fst dword [dct_matrix + ecx * 4]
+
+    lea ecx, [ebx * 8 + eax]
+    fstp dword [dct_matrix_transposed + ecx * 4]
 
     ret
     
