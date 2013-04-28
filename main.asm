@@ -4,12 +4,6 @@ section .bss
 dct_matrix resd 64
 dct_matrix_transposed resd 64
 
-section .rodata
-
-sixteen dd 16.0
-half dd 0.5
-fmt db "%.10f",10,0
-
 section .data
 initialized db 0
 
@@ -18,7 +12,6 @@ section .text
 global fdct
 global idct
 global calculate_dct_matrix
-global print_dct_matrix
 
 
 fdct: ; (float * in, float * out, int n) {
@@ -33,7 +26,8 @@ fdct: ; (float * in, float * out, int n) {
     mov edi, [ebp + 24]
     mov ebx, [ebp + 28]
 
-    sub esp, 12
+    sub esp, 16
+    mov [esp + 12], dword 0.125
 
     mov [esp], dword dct_matrix
 
@@ -68,7 +62,8 @@ idct: ; (float * in, float * out, int n) {
     mov edi, [ebp + 24]
     mov ebx, [ebp + 28]
 
-    sub esp, 12
+    sub esp, 16
+    mov [esp + 12], dword 8.0
 
     mov [esp], dword dct_matrix_transposed
 
@@ -92,7 +87,7 @@ idct: ; (float * in, float * out, int n) {
 ; }
 
 
-dct_impl: ; (float * t, float * data, float * out) {
+dct_impl: ; (float * t, float * data, float * out, float multiplier) {
     push ebx
     push esi
     push edi
@@ -126,6 +121,7 @@ dct_impl: ; (float * t, float * data, float * out) {
             
             haddps xmm0, xmm0
             haddps xmm0, xmm0
+            mulss xmm0, [ebp + 32]
 
             lea edx, [eax + ecx * 8]
             movd [edi + edx * 4], xmm0
@@ -191,24 +187,6 @@ dct_impl: ; (float * t, float * data, float * out) {
     ret
 ; }
 
-print_dct_matrix: ; () {
-    push ebx
-    xor ebx, ebx
-    .loop3:
-        cmp ebx, 64
-        je .endloop3
-
-        push dword [dct_matrix + 4 * ebx]
-        push fmt
-        call printf
-        add esp, 8
-        inc ebx
-
-        jmp .loop3
-    .endloop3:
-    pop ebx
-    ret
-; }
 
 calculate_dct_matrix: ; () {
    push ebx
