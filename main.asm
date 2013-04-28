@@ -271,10 +271,13 @@ calculate_dct_element: ; (eax &, ebx &) {
 
     pop eax
     lea ecx, [eax * 8 + ebx]
-    fst dword [dct_matrix + ecx * 4]
+    fstp dword [dct_matrix + ecx * 4]
 
+    mov edx, [dct_matrix + ecx * 4]
     lea ecx, [ebx * 8 + eax]
-    fstp dword [dct_matrix_transposed + ecx * 4]
+    mov [dct_matrix_transposed + ecx * 4], edx
+    ;fstp dword [dct_matrix_transposed + ecx * 4]
+    
 
     ret
 
@@ -283,7 +286,8 @@ calculate_dct_element: ; (eax &, ebx &) {
         fld dword [esp]
         add esp, 4
         fsqrt
-        lea ecx, [eax * 8 + ebx]
-        fstp dword [dct_matrix + ecx * 4]
+        fst dword [dct_matrix + ebx * 4]
+        lea ecx, [ebx * 8]
+        fstp dword [dct_matrix_transposed + ecx * 4]
         ret
 ; }
