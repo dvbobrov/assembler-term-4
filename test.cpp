@@ -2,8 +2,8 @@
 
 extern "C" {
     void calculate_dct_matrix();
-    void fdct(float * in, float * out, int n);
-    void idct(float * in, float * out, int n);
+    void _fdct(float * in, float * out, int n);
+    void _idct(float * in, float * out, int n);
 }
 
 float test[128] = { -16342, 2084, -10049, 10117, 2786, -659, -4905, 12975,
@@ -34,7 +34,7 @@ int main()
 //        }
 //    }
 //
-    fdct(test, res, 2);
+    _fdct(test, res, 2);
 
     for (int i = 0; i < 8; i++)
     {
@@ -57,7 +57,7 @@ int main()
     }
     std::cout << "---\n\n";
 
-    idct(res, test, 2);
+    _idct(res, test, 2);
     for (int i = 0; i < 8; i++)
     {
         for (int j = 0; j < 8; j++)

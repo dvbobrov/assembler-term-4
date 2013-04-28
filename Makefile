@@ -1,11 +1,11 @@
-all: main.o test.o
-	g++ -m32 -g -Wall main.o test.o -o test
+all: dct.o test.o
+	g++ -m32 -g -Wall dct.o test.o -o test
 
-main.o: main.asm
-	yasm -g dwarf2 -f elf32 -a x86 main.asm
+dct.o: dct.asm
+	yasm -g dwarf2 -f elf32 -a x86 dct.asm
 
 test.o: test.cpp
 	g++ -c -m32 -Wall -g -o test.o test.cpp
 
 clean:
-	rm -f main.o test.o test
+	rm -f dct.o test.o test
